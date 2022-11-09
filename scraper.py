@@ -3,16 +3,17 @@ from bs4 import BeautifulSoup
 import csv
 from PIL import Image, ImageDraw, ImageFont
 import os.path
+import time
 
 
 def get_items_from_csv(path):
-    items = []
+    item_list = []
     with open(path) as csvfile:
-        csvReader = csv.reader(csvfile)
-        for row in csvReader:
-            items.append(row)
-    items.pop(0)
-    return items
+        csv_reader = csv.reader(csvfile)
+        for row in csv_reader:
+            item_list.append(row)
+    item_list.pop(0)
+    return item_list
 
 
 def get_product_picture_from_url(url, logfile, size):
@@ -26,10 +27,11 @@ def get_product_picture_from_url(url, logfile, size):
         if link.startswith('https://media.restocks.net/products/'):
             break
     # GET PRODUCT NAME
-    title_h1 = soup.find('div', {'class': 'product__title'}).find(
+    product_title = soup.find('div', {'class': 'product__title'}).find(
         "h1", recursive=False)
-    add_product_name_to_logs(title_h1.text, logfile)
-    save_product_picture_with_size(title_h1.text, size, link)
+    add_product_name_to_logs(product_title.text, size, logfile)
+    slug = url.replace(url[0:26], "")
+    save_product_picture_with_size(slug, size, link)
 
 
 def get_product_picture_from_sku(sku, logfile, size):
@@ -41,25 +43,26 @@ def get_product_picture_from_sku(sku, logfile, size):
             product_picture = data['image']
             product_picture = product_picture.replace('400.png', '1000.png')
             product_name = data['name']
-            print(product_name, product_picture)
-            add_product_name_to_logs(product_name, logfile)
-            save_product_picture_with_size(product_name, size, product_picture)
+            add_product_name_to_logs(product_name, size, logfile)
+            slug = (data['slug']).replace((data['slug'])[0:26], "")
+            save_product_picture_with_size(slug, size, product_picture)
         else:
             print('No exact match with SKU {} found.'.format(sku))
     else:
         print("No match with SKU {}.".format(sku))
 
 
-def add_product_name_to_logs(name, path):
+def add_product_name_to_logs(name, size, path):
+    text = name + " - EU " + size
+    print(text)
     file = open(path, 'a')
-    file.write(name)
-    file.write("\n")
+    file.write(text + "\n")
     file.close()
 
 
 def save_product_picture_with_size(name, size, img_url):
     name = name.replace(' ', '-').replace('"', '')
-    size = size.replace('/', 'l')
+    size = size.replace('/', 'l').replace(' ', '_')
     name += "_" + size
     path = "assets/{}".format(name)
     if not (os.path.exists(path + ".png")):
@@ -69,7 +72,7 @@ def save_product_picture_with_size(name, size, img_url):
         # ADD SIZE TO IMAGE
         im = Image.open("assets/" + name + '.png').convert('RGBA')
         title_font = ImageFont.truetype("arial.ttf", size=100)
-        title_text = size
+        title_text = size.replace('_', ' ')
         image_editable = ImageDraw.Draw(im)
         image_editable.text((15, 15), title_text, (0, 0, 0), font=title_font)
         im.save("assets/" + name + ".png")
@@ -78,7 +81,26 @@ def save_product_picture_with_size(name, size, img_url):
 # CLEAR TXT FILE
 product_names = open('names.txt', 'w').close
 
-items = get_items_from_csv('scrape_sku.csv')
+# PROMPT USER TO CHOOSE MODE
+modes = ['URL', 'SKU']
+user_input = ''
+input_message = "Choose a mode:\n"
+for index, item in enumerate(modes):
+    input_message += f'{index+1}) {item}\n'
+input_message += 'Your choice: '
+while user_input not in map(str, range(1, len(modes) + 1)):
+    user_input = input(input_message)
+print('Starting ' + modes[int(user_input) - 1] + " mode...")
 
-for item in items:
-    get_product_picture_from_sku(item[0], 'names.txt', item[1])
+start_time = time.time()
+data = []
+if user_input == "1":
+    data = get_items_from_csv('scrape_url.csv')
+    for p in data:
+        get_product_picture_from_url(p[0], 'names.txt', p[1])
+if user_input == "2":
+    data = get_items_from_csv('scrape_sku.csv')
+    for p in data:
+        get_product_picture_from_sku(p[0], 'names.txt', p[1])
+print("--- %s seconds ---" % round((time.time() - start_time), 2))
+
