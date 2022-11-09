@@ -13,6 +13,8 @@ def get_items_from_csv(path):
         for row in csv_reader:
             item_list.append(row)
     item_list.pop(0)
+    # SORT BY SIZE
+    item_list.sort(key=lambda x: x[1])
     return item_list
 
 
@@ -64,18 +66,18 @@ def save_product_picture_with_size(name, size, img_url):
     name = name.replace(' ', '-').replace('"', '')
     size = size.replace('/', 'l').replace(' ', '_')
     name += "_" + size
-    path = "assets/{}".format(name)
+    path = "images/{}".format(name)
     if not (os.path.exists(path + ".png")):
         with open(path + '.png', 'wb') as f:
             im = requests.get(img_url)
             f.write(im.content)
         # ADD SIZE TO IMAGE
-        im = Image.open("assets/" + name + '.png').convert('RGBA')
+        im = Image.open("images/" + name + '.png').convert('RGBA')
         title_font = ImageFont.truetype("arial.ttf", size=100)
         title_text = size.replace('_', ' ')
         image_editable = ImageDraw.Draw(im)
         image_editable.text((15, 15), title_text, (0, 0, 0), font=title_font)
-        im.save("assets/" + name + ".png")
+        im.save("images/" + name + ".png")
 
 
 # CLEAR TXT FILE
