@@ -1,29 +1,47 @@
 from PIL import Image
 import os
 
-image_list = os.listdir("images")
-
-COLLAGE_COUNT = 25
+IMAGE_LIST = os.listdir("images")
+IMAGE_WIDTH = 1000
+IMAGE_HEIGHT = 600
 PATH = 'collage/'
 
-height = 0
-width = 0
-count = 0
-collage = Image.new("RGBA", size=(5000, 3000))
 
-for index, i in enumerate(image_list):
-    if (index != 0 and index % 25 == 0) or index == len(image_list):
-        collage.save(PATH + 'collage{}.png'.format(count))
-        collage = Image.new("RGBA", size=(5000, 3000))
-        count += 1
-        height = 0
-        width = 0
-    collage.paste(Image.open("images/{}".format(i)), (width, height))
+def create_collage(vertical, horizontal):
+    empty_folder()
+    # TOTAL PICTURES IN SINGLE CANVAS
+    total = vertical * horizontal
 
-    height += 600
+    # DIMENSIONS OF CANVAS
+    width = horizontal * IMAGE_WIDTH
+    height = vertical * IMAGE_HEIGHT
+    collage = Image.new("RGBA", size=(width, height))
 
-    if height > 2400:
-        width += 1000
-        height = 0
+    x_range = 0
+    y_range = 0
+    count = 1
+    for index, i in enumerate(IMAGE_LIST):
+        # CREATE NEW CANVAS IF CANVAS REACHES MAX CAPACITY
+        if index != 0 and index % total == 0:
+            collage.save(PATH + 'collage{}.png'.format(count))
+            collage = Image.new("RGBA", size=(width, height))
+            count += 1
+            x_range = 0
+            y_range = 0
 
-collage.save(PATH + '/collage{}.png'.format(count))
+        collage.paste(Image.open("images/{}".format(i)), (x_range, y_range))
+
+        # MOVE PASTE COORDINATES BY THE SIZE OF ONE IMAGE
+        x_range += IMAGE_WIDTH
+        if x_range == width:
+            y_range += IMAGE_HEIGHT
+            x_range = 0
+    collage.save(PATH + '/collage{}.png'.format(count))
+
+
+def empty_folder():
+    for f in os.listdir(PATH):
+        os.remove(os.path.join(PATH, f))
+
+
+create_collage(5, 5)

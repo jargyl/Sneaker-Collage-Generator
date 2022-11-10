@@ -65,19 +65,19 @@ def add_product_name_to_logs(name, size, path):
 def save_product_picture_with_size(name, size, img_url):
     name = name.replace(' ', '-').replace('"', '')
     size = size.replace('/', 'l').replace(' ', '_')
-    name += "_" + size
-    path = "images/{}".format(name)
+    filename = size + "_" + name
+    path = "images/{}".format(filename)
     if not (os.path.exists(path + ".png")):
         with open(path + '.png', 'wb') as f:
             im = requests.get(img_url)
             f.write(im.content)
         # ADD SIZE TO IMAGE
-        im = Image.open("images/" + name + '.png').convert('RGBA')
+        im = Image.open("images/" + filename + '.png').convert('RGBA')
         title_font = ImageFont.truetype("arial.ttf", size=100)
         title_text = size.replace('_', ' ')
         image_editable = ImageDraw.Draw(im)
         image_editable.text((15, 15), title_text, (0, 0, 0), font=title_font)
-        im.save("images/" + name + ".png")
+        im.save("images/" + filename + ".png")
 
 
 # CLEAR TXT FILE
