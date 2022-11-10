@@ -4,7 +4,9 @@ import csv
 from PIL import Image, ImageDraw, ImageFont
 import os.path
 import time
+from collage import create_collage
 
+LOGFILE = "names.txt"
 
 def get_items_from_csv(path):
     item_list = []
@@ -40,13 +42,13 @@ def get_product_picture_from_sku(sku, logfile, size):
     sku = sku.upper()
     r = requests.get("https://restocks.net/nl/shop/search?q={}&page=1".format(sku)).json()
     if r['data']:
-        data = r['data'][0]
-        if data['sku'] == sku:
-            product_picture = data['image']
+        product = r['data'][0]
+        if product['sku'] == sku:
+            product_picture = product['image']
             product_picture = product_picture.replace('400.png', '1000.png')
-            product_name = data['name']
+            product_name = product['name']
             add_product_name_to_logs(product_name, size, logfile)
-            slug = (data['slug']).replace((data['slug'])[0:26], "")
+            slug = (product['slug']).replace((product['slug'])[0:26], "")
             save_product_picture_with_size(slug, size, product_picture)
         else:
             print('No exact match with SKU {} found.'.format(sku))
@@ -84,25 +86,33 @@ def save_product_picture_with_size(name, size, img_url):
 product_names = open('names.txt', 'w').close
 
 # PROMPT USER TO CHOOSE MODE
-modes = ['URL', 'SKU']
+modes = ['SCRAPE', 'COLLAGE']
 user_input = ''
 input_message = "Choose a mode:\n"
 for index, item in enumerate(modes):
-    input_message += f'{index+1}) {item}\n'
+    input_message += f'{index + 1}) {item}\n'
 input_message += 'Your choice: '
 while user_input not in map(str, range(1, len(modes) + 1)):
     user_input = input(input_message)
-print('Starting ' + modes[int(user_input) - 1] + " mode...")
+print('Starting ' + modes[int(user_input) - 1] + " mode ...\n" )
 
 start_time = time.time()
 data = []
 if user_input == "1":
-    data = get_items_from_csv('scrape_url.csv')
+    data = get_items_from_csv('scrape.csv')
     for p in data:
-        get_product_picture_from_url(p[0], 'names.txt', p[1])
+        if p[0].startswith("http"):
+            get_product_picture_from_url(p[0], LOGFILE, p[1])
+        else:
+            get_product_picture_from_sku(p[0], LOGFILE, p[1])
 if user_input == "2":
-    data = get_items_from_csv('scrape_sku.csv')
-    for p in data:
-        get_product_picture_from_sku(p[0], 'names.txt', p[1])
+    print("Choose height & width of collage (eg. 4x8)")
+    while True:
+        try:
+            vertical = int(input("Height: "))
+            horizontal = int(input("Width: "))
+            break
+        except ValueError:
+            print("Please enter a number")
+    create_collage(vertical, horizontal)
 print("--- %s seconds ---" % round((time.time() - start_time), 2))
-

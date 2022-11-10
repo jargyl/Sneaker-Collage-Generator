@@ -42,6 +42,3 @@ def create_collage(vertical, horizontal):
 def empty_folder():
     for f in os.listdir(PATH):
         os.remove(os.path.join(PATH, f))
-
-
-create_collage(5, 5)
