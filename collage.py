@@ -2,6 +2,7 @@ from PIL import Image
 import os
 
 IMAGE_LIST = os.listdir("images")
+print(sorted(IMAGE_LIST))
 IMAGE_WIDTH = 1000
 IMAGE_HEIGHT = 600
 PATH = 'collage/'
@@ -23,7 +24,7 @@ def create_collage(vertical, horizontal):
     for index, i in enumerate(IMAGE_LIST):
         # CREATE NEW CANVAS IF CANVAS REACHES MAX CAPACITY
         if index != 0 and index % total == 0:
-            collage.save(PATH + 'collage{}.png'.format(count))
+            collage.save(PATH + '{}.png'.format(count))
             collage = Image.new("RGBA", size=(width, height))
             count += 1
             x_range = 0
@@ -36,7 +37,7 @@ def create_collage(vertical, horizontal):
         if x_range == width:
             y_range += IMAGE_HEIGHT
             x_range = 0
-    collage.save(PATH + '/collage{}.png'.format(count))
+    collage.save(PATH + '/{}.png'.format(count))
 
 
 def empty_folder():
