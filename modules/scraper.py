@@ -18,9 +18,9 @@ def get_product_picture_from_url(url, size):
         if link.startswith('https://media.restocks.net/products/'):
             break
     # GET PRODUCT NAME
-    product_title = soup.find('div', {'class': 'product__title'}).find(
-        "h1", recursive=False)
-    add_product_to_logs(product_title.text, size, FOUND_FILE)
+    title = soup.find('title').string
+    product_info = title.split(' - ')
+    add_product_to_logs(product_info[1], size, FOUND_FILE, product_info[0])
     slug = url.replace(url[0:26], "")
     save_product_picture_with_size(slug, size, link)
 
@@ -34,7 +34,7 @@ def get_product_picture_from_sku(sku, size):
             product_picture = product['image']
             product_picture = product_picture.replace('400.png', '1000.png')
             product_name = product['name']
-            add_product_to_logs(product_name, size, FOUND_FILE)
+            add_product_to_logs(sku, size, FOUND_FILE, product_name)
             slug = (product['slug']).replace((product['slug'])[0:26], "")
             save_product_picture_with_size(slug, size, product_picture)
         else:
@@ -43,15 +43,12 @@ def get_product_picture_from_sku(sku, size):
         print("No match with SKU {}.".format(sku))
 
 
-def add_product_to_logs(product, size, path):
-    if path == FOUND_FILE:
-        text = product + " - EU " + size
-    else:
-        text = f"{product} NOT FOUND"
+def add_product_to_logs(sku, size, path, product="NOT FOUND",):
+    text = f"{product}\t{sku}\tEU {size}"
+    print("{:<50} {:<20}EU {:<15}".format(product, sku, size))
     file = open(path, 'a')
     file.write(text + "\n")
     file.close()
-    print(text)
 
 
 def save_product_picture_with_size(name, size, img_url):
