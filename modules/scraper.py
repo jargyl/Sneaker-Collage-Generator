@@ -1,3 +1,5 @@
+import time
+
 import requests
 from bs4 import BeautifulSoup
 from PIL import Image, ImageDraw, ImageFont
@@ -20,31 +22,37 @@ def get_product_picture_from_url(url, size):
     # GET PRODUCT NAME
     title = soup.find('title').string
     product_info = title.split(' - ')
-    add_product_to_logs(product_info[1], size, FOUND_FILE, product_info[0])
+    add_product_to_logs(product_info[1], url, size, FOUND_FILE, product_info[0])
     slug = url.replace(url[0:26], "")
     save_product_picture_with_size(slug, size, link)
 
 
 def get_product_picture_from_sku(sku, size):
     sku = sku.upper()
-    r = requests.get("https://restocks.net/nl/shop/search?q={}&page=1".format(sku)).json()
+    query_url = f"https://restocks.net/nl/shop/search?q={sku}&page=1"
+    r = requests.get(query_url).json()
     if r['data']:
         product = r['data'][0]
         if product['sku'] == sku:
             product_picture = product['image']
-            product_picture = product_picture.replace('400.png', '1000.png')
+            product_picture = product_picture.replace('400', '1000')
+            print(product_picture)
+            product_url = product['slug']
             product_name = product['name']
-            add_product_to_logs(sku, size, FOUND_FILE, product_name)
+
+            r = requests.get(product_url)
+
+            add_product_to_logs(sku, product_url, size, FOUND_FILE, product_name)
             slug = (product['slug']).replace((product['slug'])[0:26], "")
             save_product_picture_with_size(slug, size, product_picture)
         else:
-            add_product_to_logs(sku, size, NOTFOUND_FILE)
+            add_product_to_logs(sku, query_url, size, NOTFOUND_FILE)
     else:
         print("No match with SKU {}.".format(sku))
 
 
-def add_product_to_logs(sku, size, path, product="NOT FOUND",):
-    text = f"{product}\t{sku}\tEU {size}"
+def add_product_to_logs(sku, url, size, path, product="NOT FOUND",):
+    text = f"{product}\t{sku}\tEU {size}\t{url}"
     print("{:<50} {:<20}EU {:<15}".format(product, sku, size))
     file = open(path, 'a')
     file.write(text + "\n")
@@ -65,6 +73,11 @@ def save_product_picture_with_size(name, size, img_url):
     if not (os.path.exists(path + ".png")):
         with open(path + '.png', 'wb') as f:
             im = requests.get(img_url)
+            while im.status_code != 200:
+                print("error")
+                time.sleep(10)
+                im = requests.get(img_url)
+
             f.write(im.content)
         # ADD SIZE TO IMAGE
         im = Image.open("collage/images/" + filename + '.png').convert('RGBA')
